@@ -295,10 +295,10 @@ def remap_novoalign_bam(bamfn, threads, fastaref, picardjar, novoref, mutid='nul
     sam_cmd = []
 
     if paired:
-        sam_cmd  = ['novoalign', '--mmapOff', '-F', 'STDFQ', '-f', fastq[0], fastq[1], '-r', 'Random', '-d', novoref, '-oSAM'] # interleaved
+        sam_cmd  = ['novoalign', '-F', 'STDFQ', '-f', fastq[0], fastq[1], '-r', 'Random', '-d', novoref, '-oSAM'] # interleaved
         #sam_cmd  = ['novoalign', '-F', 'STDFQ', '-f', fastq[0], fastq[1], '-r', 'Random', '-d', novoref, '-oSAM'] # uncomment for unlicensed
     else:
-        sam_cmd  = ['novoalign', '--mmapOff', '-F', 'STDFQ', '-f', fastq[0], '-r', 'Random', '-d', novoref, '-oSAM'] # interleaved
+        sam_cmd  = ['novoalign', '-F', 'STDFQ', '-f', fastq[0], '-r', 'Random', '-d', novoref, '-oSAM'] # interleaved
         #sam_cmd  = ['novoalign', '-F', 'STDFQ', '-f', fastq, '-r', 'Random', '-d', novoref, '-oSAM'] # uncomment for unlicensed
 
     assert len(sam_cmd) > 0
@@ -333,11 +333,20 @@ def remap_novoalign_bam(bamfn, threads, fastaref, picardjar, novoref, mutid='nul
 
     # check if BAM readcount looks sane
     if paired:
-        if bamreadcount(bamfn) < fastqreadcount(fastq[0]) + fastqreadcount(fastq[1]): 
-            raise ValueError("ERROR\t" + now() + "\t" + mutid + "\tbam readcount < fastq readcount, alignment sanity check failed!\n")
+        bam_count = bamreadcount(bamfn)
+        fastq1_count = fastqreadcount(fastq[0])
+        fastq2_count = fastqreadcount(fastq[1])
+        if bam_count < fastq1_count + fastq2_count:
+            raise ValueError(
+                "ERROR\t{}\t{}\tbam readcount ({}) < fastq readcount ({} + {} = {}), alignment sanity check failed!\n".format(
+                    now(), mutid, bam_count, fastq1_count, fastq2_count, fastq1_count + fastq2_count))
     else:
+        bam_count = bamreadcount(bamfn)
+        fastq1_count = fastqreadcount(fastq[0])
         if bamreadcount(bamfn) < fastqreadcount(fastq[0]): 
-            raise ValueError("ERROR\t" + now() + "\t" + mutid + "\tbam readcount < fastq readcount, alignment sanity check failed!\n")
+            raise ValueError(
+                "ERROR\t{}\t{}\tbam readcount ({}) < fastq readcount ({}), alignment sanity check failed!\n".format(
+                    now(), mutid, bam_count, fastq1_count))
 
     if paired:
         for fq in fastq:
